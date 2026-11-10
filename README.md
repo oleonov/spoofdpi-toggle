@@ -136,6 +136,30 @@ unlisted (it is not published on AMO) and puts the `.xpi` into `dist/`.
 
 Other scripts: `npm test` (extension logic tests), `npm run lint`, `npm run build` (unsigned zip in `dist/`).
 
+## Releasing
+
+Releases are signed and published by GitHub Actions (`.github/workflows/release.yml`).
+
+One-time setup: add the AMO API keys as repository secrets (each command prompts for the value):
+
+```sh
+gh secret set WEB_EXT_API_KEY      # JWT issuer, looks like user:12345678:123
+gh secret set WEB_EXT_API_SECRET   # JWT secret
+```
+
+For every release:
+
+1. Bump `version` in `extension/manifest.json` (AMO signs each version only once) and commit it.
+2. Tag and push:
+
+   ```sh
+   git tag v1.0.1 && git push origin main v1.0.1
+   ```
+
+The workflow checks that the tag matches the manifest version, runs the tests and lint, signs the
+add-on as unlisted on addons.mozilla.org, and attaches the signed `.xpi` to a new GitHub release.
+If AMO holds the version for manual review, the job fails on timeout; re-run it once AMO approves it.
+
 ## Development
 
 ```sh

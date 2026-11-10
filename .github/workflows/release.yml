@@ -1,0 +1,66 @@
+name: Release
+
+# Push a tag vX.Y.Z (equal to the version in extension/manifest.json) to sign the add-on on
+# addons.mozilla.org (unlisted) and publish the signed .xpi as a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check that the tag matches the manifest version
+        id: version
+        run: |
+          version="$(node -p "require('./extension/manifest.json').version")"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match manifest version $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+
+      - name: Sign on addons.mozilla.org
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
+        run: |
+          if [ -z "$WEB_EXT_API_KEY" ] || [ -z "$WEB_EXT_API_SECRET" ]; then
+            echo "::error::repository secrets WEB_EXT_API_KEY and WEB_EXT_API_SECRET are not set"
+            exit 1
+          fi
+          npm run sign -- --approval-timeout 1800000
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          shopt -s nullglob
+          signed=(dist/*.xpi)
+          if [ "${#signed[@]}" -ne 1 ]; then
+            echo "::error::expected exactly one signed .xpi in dist/, found ${#signed[@]}"
+            exit 1
+          fi
+          xpi="dist/spoofdpi_toggle-$VERSION.xpi"
+          [ "${signed[0]}" = "$xpi" ] || mv "${signed[0]}" "$xpi"
+          gh release create "$GITHUB_REF_NAME" "$xpi" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
