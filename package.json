@@ -1,0 +1,14 @@
+{
+  "name": "spoofdpi-toggle",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/lib.test.js",
+    "lint": "web-ext lint --source-dir extension",
+    "build": "web-ext build --source-dir extension --artifacts-dir dist --overwrite-dest",
+    "sign": "web-ext sign --channel=unlisted --source-dir extension --artifacts-dir dist"
+  },
+  "devDependencies": {
+    "web-ext": "10.8.0"
+  }
+}

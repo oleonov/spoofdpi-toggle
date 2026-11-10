@@ -1,0 +1,21 @@
+{
+  "manifest_version": 2,
+  "name": "SpoofDPI Toggle",
+  "version": "1.0.0",
+  "description": "Toggle SpoofDPI and route only a list of blocked domains through it.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "spoofdpi-toggle@oleonov",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  },
+  "permissions": ["nativeMessaging", "proxy", "storage", "<all_urls>"],
+  "background": { "scripts": ["lib.js", "background.js"], "persistent": true },
+  "browser_action": {
+    "default_title": "SpoofDPI: off",
+    "default_icon": "icons/off.svg"
+  },
+  "options_ui": { "page": "options.html" },
+  "icons": { "48": "icons/off.svg" }
+}
